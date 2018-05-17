@@ -55,6 +55,12 @@ else
     BUG_STAMP=$1
 fi
 
+if ! date -d ${BUG_STAMP} &> /dev/null;
+then
+    echo "Provided date '${BUG_STAMP}' is not a valid date .."
+    exit 64   # EX_USAGE
+fi
+
 BUG_ID=$2
 BUG_DISTRO=$3
 BUG_PKG=$4
