@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# yes, this could have been done with urllib(2) or requests and json, but
+# future extensions / other utils will probably use PyGitHub as well.
+
 import os
 import sys
 import argparse
