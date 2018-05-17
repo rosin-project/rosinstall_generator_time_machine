@@ -20,7 +20,7 @@ set -e
 #
 # args:
 #
-#  1: url
+#  1: url OR <iso 8601 date+timestamp>
 #  2: bug id
 #  3: ros distro
 #  4: buggy package
@@ -28,7 +28,7 @@ set -e
 
 if [ $# -ne 5 ];
 then
-    echo "USAGE: $0 ISSUE_URL BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME"
+    echo "USAGE: $0 [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME"
     exit 1
 fi
 
@@ -44,7 +44,17 @@ git -C ${ROSDISTRO_DIR} checkout master
 
 
 BUG_ISSUE_URL=$1
-BUG_STAMP=$(${SCRIPT_DIR}/get_issue_creation_date.py ${BUG_ISSUE_URL})
+
+if [[ $BUG_ISSUE_URL = *"http"* ]];
+then
+    echo "Retrieving issue 'created_at' property for: ${BUG_ISSUE_URL}"
+    BUG_STAMP=$(${SCRIPT_DIR}/get_issue_creation_date.py ${BUG_ISSUE_URL})
+    echo "Found: ${BUG_STAMP}"
+else
+    echo "Going back to '${1}'"
+    BUG_STAMP=$1
+fi
+
 BUG_ID=$2
 BUG_DISTRO=$3
 BUG_PKG=$4
