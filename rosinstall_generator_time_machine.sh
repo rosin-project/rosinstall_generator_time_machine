@@ -29,7 +29,7 @@ set -e
 if [ $# -ne 5 ];
 then
     echo "USAGE: $0 [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME"
-    exit 1
+    exit 64   # EX_USAGE
 fi
 
 SCRIPT_DIR=$(dirname $(readlink -f $0))
