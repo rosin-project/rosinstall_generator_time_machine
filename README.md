@@ -26,6 +26,8 @@ rosinstall_generator_time_machine.sh \
   deps_eed104d.rosinstall
 ```
 
+**Note**: be prepared to have to press <kbd>RET</kbd> a few times for some repositories that no longer exist, or are now private repositories (for which `git` would need a password).
+
 This will generate the `deps_eed104d.rosinstall` file containing all dependencies (and only the dependencies) of the `kobuki_ftdi` package in ROS Kinetic at the time that `yujinrobot/kobuki_core/issues/29` was reported. It will also generate a yaml file containing some metadata (`ros/rosdistro` commit used, issue created stamp, ROS distribution, etc) and a directory containing the `rosdistro` cache that was used to generate the `.rosinstall` file.
 
 The temporary `rosdistro` index yaml in the working directory may be removed afterwards, it is not needed for anything.
