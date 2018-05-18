@@ -15,26 +15,40 @@ The `.rosinstall` file can then be used to build the set of ROS packages that wi
 rosinstall_generator_time_machine.sh [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME
 ```
 
-Example invocation to generate a `.rosinstall` file, based on an issue opened on the `yujinrobot/kobuki_core` tracker on the 1st of March 2017:
+Example invocation to generate a `.rosinstall` file, based on an issue opened on the `yujinrobot/kobuki_core` tracker on the 1st of March 2017 (note reuse of the cache):
 
-```
-rosinstall_generator_time_machine.sh \
+```shell
+user@machine:~$ rosinstall_generator_time_machine.sh \
   https://github.com/yujinrobot/kobuki_core/issues/29 \
   eed104d \
   kinetic \
   kobuki_ftdi \
   deps_eed104d.rosinstall
+Switched to branch 'master'
+Your branch is up-to-date with 'origin/master'.
+Retrieving issue 'created_at' property for: https://github.com/yujinrobot/kobuki_core/issues/29
+Found: 2017-03-01T08:57:20Z
+Determined rosdistro commit: 2af311e205b874e862be155ffe21cb54e902f60b
+Reusing existing branch
+Switched to branch 'bughunt_eed104d'
+Skipping rosdistro cache, already exists
+Creating temporary rosdistro index ..
+Using temporary index to generate rosinstall file (dependencies only) ..
+Using ROS_DISTRO: kinetic
+Storing metadata ..
+Done
 ```
 
 The same invocation, but with a datetime instead of an issue url:
 
-```
+```shell
 rosinstall_generator_time_machine.sh \
   2017-03-01T08:57:20Z \
   eed104d \
   kinetic \
   kobuki_ftdi \
   deps_eed104d.rosinstall
+...
 ```
 
 **Note**: be prepared to have to press <kbd>RET</kbd> a few times for some repositories that no longer exist, or are now private repositories (for which `git` would need a password).
