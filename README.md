@@ -71,13 +71,13 @@ In order to be able to run this, the following need to be present:
 It is recommended to install these dependencies (ie: `rosdistro` and `rosinstall_generator`) in a Python virtual environment (order matters):
 
 ```shell
-$ python3 -m venv ritm_venv
-$ source ritm_venv/bin/activate
-$ pip3 install -U pip
-$ pip3 install wheel
-$ pip3 install git+https://github.com/gavanderhoorn/rosdistro_python@rosin_bughunt_0.6.8
-$ pip3 install rosinstall_generator
-$ pip3 install PyGitHub
+python3 -m venv ritm_venv
+source ritm_venv/bin/activate
+pip3 install -U pip
+pip3 install wheel
+pip3 install git+https://github.com/gavanderhoorn/rosdistro_python@rosin_bughunt_0.6.8
+pip3 install rosinstall_generator
+pip3 install PyGitHub
 ```
 
 At this point the environment setup should be complete and the tool can be used. Do not forget to (re)activate the virtual environment again when needed.
