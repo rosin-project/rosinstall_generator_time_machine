@@ -42,7 +42,7 @@ Done
 The same invocation, but with a datetime instead of an issue url:
 
 ```shell
-rosinstall_generator_time_machine.sh \
+user@machine:~$ rosinstall_generator_time_machine.sh \
   2017-03-01T08:57:20Z \
   eed104d \
   kinetic \
@@ -51,7 +51,7 @@ rosinstall_generator_time_machine.sh \
 ...
 ```
 
-**Note**: be prepared to have to press <kbd>RET</kbd> a few times for some repositories that no longer exist, or are now private repositories (for which `git` would need a password).
+**Note**: be prepared to press <kbd>RET</kbd> a few times for some repositories that no longer exist, or are now private repositories (and for which `git` would now need a password).
 
 This will generate the `deps_eed104d.rosinstall` file containing all dependencies (and only the dependencies) of the `kobuki_ftdi` package in ROS Kinetic at the time that `yujinrobot/kobuki_core/issues/29` was reported. It will also generate a yaml file containing some metadata (`ros/rosdistro` commit used, issue created stamp, ROS distribution, etc) and a directory containing the `rosdistro` cache that was used to generate the `.rosinstall` file.
 
@@ -62,17 +62,25 @@ The temporary `rosdistro` index yaml in the working directory may be removed aft
 
 In order to be able to run this, the following need to be present:
 
- - Python 2
  - git
+ - Python 3 (used ROS modules are bilingual, but helper script isn't)
  - `rosdistro` Python library ([this fork](https://github.com/gavanderhoorn/rosdistro_python/tree/rosin_bughunt_0.6.8), `rosin_bughunt_0.6.8` branch)
  - `rosinstall_generator`
+ - PyGitHub
 
-It is recommended to install these dependencies (ie: `rosdistro` and `rosinstall_generator`) in a (Python 2) virtual environment.
+It is recommended to install these dependencies (ie: `rosdistro` and `rosinstall_generator`) in a Python virtual environment (order matters):
 
-For the helper script:
+```shell
+$ python3 -m venv ritm_venv
+$ source ritm_venv/bin/activate
+$ pip3 install -U pip
+$ pip3 install wheel
+$ pip3 install git+https://github.com/gavanderhoorn/rosdistro_python@rosin_bughunt_0.6.8
+$ pip3 install rosinstall_generator
+$ pip3 install PyGitHub
+```
 
- - Python 3
- - PyGitHub (installed for Python 3)
+At this point the environment setup should be complete and the tool can be used. Do not forget to (re)activate the virtual environment again when needed.
 
 
 ## Limitations
