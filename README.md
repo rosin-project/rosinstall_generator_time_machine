@@ -85,7 +85,7 @@ At this point the environment setup should be complete and the tool can be used.
 
 ## Limitations
 
-The current implementation only supports `version 3` rosdistro yamls.
+The current implementation can only go back to 25th of January, 2014 (on that date updates to various packages including `rosdistro` and `rosinstall_generator` was rolled out for REP-141 compliance).
 It also cannot reuse any caches that are 'close' or 'near' in time to a previous cache right now, leading to the tool always (re)building a rosdistro cache, even if there is only a minor time difference between two subsequent `rosdistro` commits.
 
 It (obviously) cannot provide information on repositories that no longer exist (this becomes more of a problem the further back in time one goes).
