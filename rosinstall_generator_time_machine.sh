@@ -40,6 +40,7 @@ then
     echo "Need to clone rosdistro .."
     git clone https://github.com/ros/rosdistro.git ${ROSDISTRO_DIR}
 fi
+git -C ${ROSDISTRO_DIR} checkout -- .
 git -C ${ROSDISTRO_DIR} checkout master
 
 
@@ -95,20 +96,14 @@ else
 fi
 
 
-echo "Creating temporary rosdistro index .."
-cat << EOF > rosdistro_index_${BUG_ID}.yaml
-%YAML 1.1
----
-distributions:
-  ${BUG_DISTRO}:
-    distribution: [${BUG_DISTRO}/distribution.yaml]
-    distribution_cache: file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}/${BUG_DISTRO}-cache.yaml.gz
-type: index
-version: 3
-EOF
+echo "Updating temporary rosdistro index .."
+# recent indices
+sed -i "s|http://repositories.ros.org/rosdistro_cache|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml
+# old indices
+sed -i "s|http://ros.org/rosdistro|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml
 
 echo "Using temporary index to generate rosinstall file (dependencies only) .."
-ROSDISTRO_INDEX_URL=file://$(pwd)/rosdistro_index_${BUG_ID}.yaml \
+ROSDISTRO_INDEX_URL=file://$(pwd)/${ROSDISTRO_DIR}/index.yaml \
   rosinstall_generator \
     ${BUG_PKG} \
     --rosdistro=${BUG_DISTRO} \
