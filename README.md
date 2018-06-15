@@ -62,7 +62,7 @@ In order to be able to run this, the following need to be present:
 
  - git
  - Python 3 (used ROS modules are bilingual, but helper script isn't)
- - `rosdistro` Python library ([this fork](https://github.com/gavanderhoorn/rosdistro_python/tree/rosin_bughunt_0.6.8), `rosin_bughunt_0.6.8` branch)
+ - `rosdistro` Python library ([this fork](https://github.com/rosin-project/rosdistro_python/tree/rosin_bughunt_0.6.8), `rosin_bughunt_0.6.8` branch)
  - `rosinstall_generator`
  - PyGitHub
 
@@ -73,7 +73,7 @@ python3 -m venv ritm_venv
 source ritm_venv/bin/activate
 pip3 install -U pip
 pip3 install wheel
-pip3 install git+https://github.com/gavanderhoorn/rosdistro_python@rosin_bughunt_0.6.8
+pip3 install git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8
 pip3 install rosinstall_generator
 pip3 install PyGitHub
 ```
