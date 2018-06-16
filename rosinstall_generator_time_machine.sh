@@ -62,6 +62,13 @@ then
     exit 64   # EX_USAGE
 fi
 
+# check to make sure we're not going back to a point earlier than what we support
+if [ $(date --date=${BUG_STAMP} +%s) -lt $(date --date='2014-01-25T00:00:00Z' +%s) ];
+then
+    echo "Date '${BUG_STAMP}' too far in the past."
+    exit 64   # EX_USAGE
+fi
+
 BUG_ID=$2
 BUG_DISTRO=$3
 BUG_PKG=$4
