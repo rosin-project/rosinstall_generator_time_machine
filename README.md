@@ -99,3 +99,17 @@ It (obviously) cannot provide information on repositories that no longer exist (
  - expand metadata generation to include more details
  - distribute this tool in a Docker image
  - integrate with OSRF [Legacy ROS](https://hub.docker.com/r/osrf/ros_legacy/tags/) Docker images
+
+## FAQ
+
+Some frequently asked questions and answers.
+
+#### Date YYYY-MM-DDTHH:MM:SS too far in the past
+
+This error is printed whenever the script is asked to go back to a date that is beyond what is currently supported (24th of January 2014).
+
+#### No packages/stacks left after ignoring not released
+
+After figuring out the `rosdistro` commit, the script uses `rosinstall_generator` to generate a `.rosinstall` file with all the dependencies of the specified PUT. For this to work, the PUT itself must have been released (and thus registered in `rosdistro`) at the date and time that the time machine was asked to go back to.
+
+Make sure this is the case if running into this error. Realise that the package may not have been released at the time the bug was reported (if using the issue URL as input to the time machine).
