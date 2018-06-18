@@ -80,14 +80,18 @@ echo "Determined rosdistro commit: ${BUG_ROSDISTRO_COMMIT}"
 
 
 # https://stackoverflow.com/a/41991368
-if git -C ${ROSDISTRO_DIR} show-ref --quiet refs/heads/bughunt_${BUG_ID};
+# Note: we don't create tags for efficiency reasons, but to make doing all
+# of this manually easier.
+BUG_ROSDISTRO_TAG_NAME=bughunt_${BUG_ID}_${BUG_ROSDISTRO_COMMIT:0:8}
+if git -C ${ROSDISTRO_DIR} show-ref --quiet refs/tags/${BUG_ROSDISTRO_TAG_NAME};
 then
-    echo "Reusing existing branch"
-    git -C ${ROSDISTRO_DIR} checkout bughunt_${BUG_ID}
+    echo "Reusing existing tag '${BUG_ROSDISTRO_TAG_NAME}'"
 else
-    echo "Going back in rosdistro's history"
-    git -C ${ROSDISTRO_DIR} checkout -b bughunt_${BUG_ID} ${BUG_ROSDISTRO_COMMIT}
+    echo "Going back in rosdistro's history .."
+    echo "Creating tag: '${BUG_ROSDISTRO_TAG_NAME}'"
+    git -C ${ROSDISTRO_DIR} tag -am "ROBUST time machine tagging ${BUG_ROSDISTRO_COMMIT:0:8} for ${BUG_STAMP}." ${BUG_ROSDISTRO_TAG_NAME} ${BUG_ROSDISTRO_COMMIT}
 fi
+git -C ${ROSDISTRO_DIR} checkout -q ${BUG_ROSDISTRO_TAG_NAME}
 
 if [ ! -d ${BUG_ROSDISTRO_CACHE_DIR} ] || [ ! -f ${BUG_ROSDISTRO_CACHE_DIR}/${BUG_DISTRO}-cache.yaml ];
 then
