@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # Copyright (c) 2018, G.A. vd. Hoorn
 #
@@ -20,6 +20,7 @@
 import os
 import sys
 import argparse
+import urlparse
 
 try:
     from github import Github
@@ -35,7 +36,7 @@ issue_url = args.URL
 # see if this is a complete url (crude check)
 if 'http' in issue_url:
     import urllib
-    issue_url = urllib.parse.urlparse(issue_url).path
+    issue_url = urlparse.urlparse(issue_url).path
 
 splits = issue_url.split('/')
 repo, issue_nr = '{}/{}'.format(splits[1], splits[2]), int(splits[-1])
