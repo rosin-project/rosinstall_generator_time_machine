@@ -12,13 +12,13 @@ The `.rosinstall` file can then be used to build the set of ROS packages that wi
 ## Usage
 
 ```
-rosinstall_generator_time_machine.sh [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME
+rosinstall_generator_tm.sh [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME
 ```
 
 Example invocation to generate a `.rosinstall` file, based on an issue opened on the `yujinrobot/kobuki_core` tracker on the 1st of March 2017 (note reuse of the cache):
 
 ```shell
-user@machine:~$ rosinstall_generator_time_machine.sh \
+user@machine:~$ rosinstall_generator_tm.sh \
   https://github.com/yujinrobot/kobuki_core/issues/29 \
   eed104d \
   kinetic \
@@ -42,7 +42,7 @@ Done
 The same invocation, but with a datetime instead of an issue url:
 
 ```shell
-user@machine:~$ rosinstall_generator_time_machine.sh \
+user@machine:~$ rosinstall_generator_tm.sh \
   2017-03-01T08:57:20Z \
   eed104d \
   kinetic \
