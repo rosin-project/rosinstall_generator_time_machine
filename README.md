@@ -61,7 +61,7 @@ This will generate the `deps_eed104d.rosinstall` file containing all dependencie
 In order to be able to run this, the following need to be present:
 
  - git
- - Python 3 (used ROS modules are bilingual, but helper script isn't)
+ - Python 2
  - `rosdistro` Python library ([this fork](https://github.com/rosin-project/rosdistro_python/tree/rosin_bughunt_0.6.8), `rosin_bughunt_0.6.8` branch)
  - `rosinstall_generator`
  - PyGitHub
@@ -69,13 +69,13 @@ In order to be able to run this, the following need to be present:
 It is recommended to install these dependencies (ie: `rosdistro` and `rosinstall_generator`) in a Python virtual environment (order matters):
 
 ```shell
-python3 -m venv ritm_venv
+virtualenv ritm_venv
 source ritm_venv/bin/activate
-pip3 install -U pip
-pip3 install wheel
-pip3 install git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8
-pip3 install rosinstall_generator
-pip3 install PyGitHub
+pip install -U pip
+pip install wheel
+pip install git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8
+pip install rosinstall_generator
+pip install PyGitHub
 ```
 
 At this point the environment setup should be complete and the tool can be used. Do not forget to (re)activate the virtual environment again when needed.
