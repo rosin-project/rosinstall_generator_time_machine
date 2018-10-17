@@ -24,11 +24,10 @@ set -e
 #  2: bug id
 #  3: ros distro
 #  4: buggy package
-#  5: output rosinstall filename
 
-if [ $# -ne 5 ];
+if [ $# -ne 4 ];
 then
-    echo "USAGE: $0 [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME"
+    printf "USAGE: $0 [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT\n" >&2
     exit 64   # EX_USAGE
 fi
 
@@ -37,46 +36,45 @@ ROSDISTRO_DIR=rosdistro
 
 if [ ! -d ${ROSDISTRO_DIR} ];
 then
-    echo "Need to clone rosdistro .."
+    printf "Need to clone rosdistro ..\n" >&2
     git clone https://github.com/ros/rosdistro.git ${ROSDISTRO_DIR}
 fi
-git -C ${ROSDISTRO_DIR} checkout -- .
-git -C ${ROSDISTRO_DIR} checkout master
+git -C ${ROSDISTRO_DIR} checkout -- . >&2
+git -C ${ROSDISTRO_DIR} checkout master >&2
 
 
 BUG_ISSUE_URL=$1
 
 if [[ $BUG_ISSUE_URL = *"http"* ]];
 then
-    echo "Retrieving issue 'created_at' property for: ${BUG_ISSUE_URL}"
+    printf "Retrieving issue 'created_at' property for: ${BUG_ISSUE_URL}\n" >&2
     BUG_STAMP=$(${SCRIPT_DIR}/get_issue_creation_date.py ${BUG_ISSUE_URL})
-    echo "Found: ${BUG_STAMP}"
+    printf "Found: ${BUG_STAMP}\n" >&2
 else
-    echo "Going back to '${1}'"
+    printf "Going back to '${1}'\n" >&2
     BUG_STAMP=$1
 fi
 
 if ! date -d ${BUG_STAMP} &> /dev/null;
 then
-    echo "Provided date '${BUG_STAMP}' is not a valid date .."
+    printf "Provided date '${BUG_STAMP}' is not a valid date ..\n" >&2
     exit 64   # EX_USAGE
 fi
 
 # check to make sure we're not going back to a point earlier than what we support
 if [ $(date --date=${BUG_STAMP} +%s) -lt $(date --date='2014-01-25T00:00:00Z' +%s) ];
 then
-    echo "Date '${BUG_STAMP}' too far in the past."
+    printf "Date '${BUG_STAMP}' too far in the past.\n" >&2
     exit 64   # EX_USAGE
 fi
 
 BUG_ID=$2
 BUG_DISTRO=$3
 BUG_PKG=$4
-BUG_ROSINSTALL_OUTPUT=$5
 
 BUG_ROSDISTRO_COMMIT=$(git -C ${ROSDISTRO_DIR} rev-list -n1 --before=${BUG_STAMP} master)
 BUG_ROSDISTRO_CACHE_DIR=$(TZ="UTC" date -d ${BUG_STAMP} +%Y%m%d_%H%M%S)_${BUG_DISTRO}_${BUG_ROSDISTRO_COMMIT:0:8}
-echo "Determined rosdistro commit: ${BUG_ROSDISTRO_COMMIT}"
+printf "Determined rosdistro commit: ${BUG_ROSDISTRO_COMMIT}\n" >&2
 
 
 # https://stackoverflow.com/a/41991368
@@ -85,35 +83,35 @@ echo "Determined rosdistro commit: ${BUG_ROSDISTRO_COMMIT}"
 BUG_ROSDISTRO_TAG_NAME=bughunt_${BUG_ID}_${BUG_ROSDISTRO_COMMIT:0:8}
 if git -C ${ROSDISTRO_DIR} show-ref --quiet refs/tags/${BUG_ROSDISTRO_TAG_NAME};
 then
-    echo "Reusing existing tag '${BUG_ROSDISTRO_TAG_NAME}'"
+    printf "Reusing existing tag '${BUG_ROSDISTRO_TAG_NAME}'\n" >&2
 else
-    echo "Going back in rosdistro's history .."
-    echo "Creating tag: '${BUG_ROSDISTRO_TAG_NAME}'"
-    git -C ${ROSDISTRO_DIR} tag -am "ROBUST time machine tagging ${BUG_ROSDISTRO_COMMIT:0:8} for ${BUG_STAMP}." ${BUG_ROSDISTRO_TAG_NAME} ${BUG_ROSDISTRO_COMMIT}
+    printf "Going back in rosdistro's history ..\n" >&2
+    printf "Creating tag: '${BUG_ROSDISTRO_TAG_NAME}'\n" >&2
+    git -C ${ROSDISTRO_DIR} tag -am "ROBUST time machine tagging ${BUG_ROSDISTRO_COMMIT:0:8} for ${BUG_STAMP}." ${BUG_ROSDISTRO_TAG_NAME} ${BUG_ROSDISTRO_COMMIT} >&2
 fi
 git -C ${ROSDISTRO_DIR} checkout -q ${BUG_ROSDISTRO_TAG_NAME}
 
 if [ ! -d ${BUG_ROSDISTRO_CACHE_DIR} ] || [ ! -f ${BUG_ROSDISTRO_CACHE_DIR}/${BUG_DISTRO}-cache.yaml ];
 then
-    echo "Building cache .."
-    rosdistro_build_cache --ignore-local --ignore-errors ${ROSDISTRO_DIR}/index.yaml ${BUG_DISTRO}
+    printf "Building cache ..\n" >&2
+    rosdistro_build_cache --ignore-local --ignore-errors ${ROSDISTRO_DIR}/index.yaml ${BUG_DISTRO} >&2
 
-    echo "Storing cache in: ${BUG_ROSDISTRO_CACHE_DIR}"
-    mkdir -p ${BUG_ROSDISTRO_CACHE_DIR}
-    mv ${BUG_DISTRO}-cache.yaml* ${BUG_ROSDISTRO_CACHE_DIR}
+    printf "Storing cache in: ${BUG_ROSDISTRO_CACHE_DIR}\n" >&2
+    mkdir -p ${BUG_ROSDISTRO_CACHE_DIR} >&2
+    mv ${BUG_DISTRO}-cache.yaml* ${BUG_ROSDISTRO_CACHE_DIR} >&2
 
 else
-    echo "Skipping rosdistro cache, already exists"
+    printf "Skipping rosdistro cache, already exists\n" >&2
 fi
 
 
-echo "Updating temporary rosdistro index .."
+printf "Updating temporary rosdistro index ..\n" >&2
 # recent indices
-sed -i "s|http://repositories.ros.org/rosdistro_cache|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml
+sed -i "s|http://repositories.ros.org/rosdistro_cache|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml >&2
 # old indices
-sed -i "s|http://ros.org/rosdistro|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml
+sed -i "s|http://ros.org/rosdistro|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml >&2
 
-echo "Using temporary index to generate rosinstall file (dependencies only) .."
+printf "Using temporary index to generate rosinstall file (dependencies only) ..\n" >&2
 ROSDISTRO_INDEX_URL=file://$(pwd)/${ROSDISTRO_DIR}/index.yaml \
   rosinstall_generator \
     ${BUG_PKG} \
@@ -121,10 +119,10 @@ ROSDISTRO_INDEX_URL=file://$(pwd)/${ROSDISTRO_DIR}/index.yaml \
     --deps-only \
     --deps \
     --tar \
-    --flat > ${BUG_ROSINSTALL_OUTPUT}
+    --flat
 
 
-echo "Storing metadata .."
+printf "Storing metadata ..\n" >&2
 cat << EOF > metadata_${BUG_PKG}_${BUG_DISTRO}_${BUG_ID}.yaml
 %YAML 1.1
 ---
@@ -139,4 +137,4 @@ reproduction-images:
   rosdistro: ${BUG_ROSDISTRO_COMMIT}
 EOF
 
-echo "Done"
+printf "Done\n" >&2
