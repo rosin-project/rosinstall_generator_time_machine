@@ -62,11 +62,11 @@ then
 fi
 
 # check to make sure we're not going back to a point earlier than what we support
-if [ $(date --date=${BUG_STAMP} +%s) -lt $(date --date='2014-01-25T00:00:00Z' +%s) ];
-then
-    printf "Date '${BUG_STAMP}' too far in the past.\n" >&2
-    exit 64   # EX_USAGE
-fi
+#if [ $(date --date=${BUG_STAMP} +%s) -lt $(date --date='2014-01-25T00:00:00Z' +%s) ];
+#then
+#    printf "Date '${BUG_STAMP}' too far in the past.\n" >&2
+#    exit 64   # EX_USAGE
+#fi
 
 BUG_ID=$2
 BUG_DISTRO=$3
@@ -76,6 +76,7 @@ BUG_ROSDISTRO_COMMIT=$(git -C ${ROSDISTRO_DIR} rev-list -n1 --before=${BUG_STAMP
 BUG_ROSDISTRO_CACHE_DIR=$(TZ="UTC" date -d ${BUG_STAMP} +%Y%m%d_%H%M%S)_${BUG_DISTRO}_${BUG_ROSDISTRO_COMMIT:0:8}
 printf "Determined rosdistro commit: ${BUG_ROSDISTRO_COMMIT}\n" >&2
 
+ROSDISTRO_PYTHON_VERSION=$(python -c 'import rosdistro; print rosdistro.__version__')
 
 # https://stackoverflow.com/a/41991368
 # Note: we don't create tags for efficiency reasons, but to make doing all
@@ -94,7 +95,13 @@ git -C ${ROSDISTRO_DIR} checkout -q ${BUG_ROSDISTRO_TAG_NAME}
 if [ ! -d ${BUG_ROSDISTRO_CACHE_DIR} ] || [ ! -f ${BUG_ROSDISTRO_CACHE_DIR}/${BUG_DISTRO}-cache.yaml ];
 then
     printf "Building cache ..\n" >&2
-    rosdistro_build_cache --ignore-local --ignore-errors ${ROSDISTRO_DIR}/index.yaml ${BUG_DISTRO} >&2
+    if [ ${ROSDISTRO_PYTHON_VERSION} == "0.2.20" ]; then
+        printf "Detected pre PR141 rosdistro Python lib\n" >&2
+        rosdistro_build_cache --ignore-errors ${ROSDISTRO_DIR}/index.yaml ${BUG_DISTRO} >&2
+    else
+        printf "Detected post PR141 rosdistro Python lib\n" >&2
+        rosdistro_build_cache --ignore-local --ignore-errors ${ROSDISTRO_DIR}/index.yaml ${BUG_DISTRO} >&2
+    fi
 
     printf "Storing cache in: ${BUG_ROSDISTRO_CACHE_DIR}\n" >&2
     mkdir -p ${BUG_ROSDISTRO_CACHE_DIR} >&2
@@ -111,6 +118,12 @@ sed -i "s|http://repositories.ros.org/rosdistro_cache|file://$(pwd)/${BUG_ROSDIS
 # old indices
 sed -i "s|http://ros.org/rosdistro|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml >&2
 
+# pre PR141 rosinstall_generator doesn't support the '--tar' option
+RIG_FLAT_ARG="--flat"
+if [ ${ROSDISTRO_PYTHON_VERSION} == "0.2.20" ]; then
+    RIG_FLAT_ARG=""
+fi
+
 printf "Using temporary index to generate rosinstall file (dependencies only) ..\n" >&2
 ROSDISTRO_INDEX_URL=file://$(pwd)/${ROSDISTRO_DIR}/index.yaml \
   rosinstall_generator \
@@ -119,7 +132,7 @@ ROSDISTRO_INDEX_URL=file://$(pwd)/${ROSDISTRO_DIR}/index.yaml \
     --deps-only \
     --deps \
     --tar \
-    --flat
+    ${RIG_FLAT_ARG}
 
 
 printf "Storing metadata ..\n" >&2
