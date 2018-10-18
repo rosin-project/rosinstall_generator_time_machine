@@ -1,0 +1,3 @@
+git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8#egg=rosdistro
+rosinstall_generator
+PyGitHub
