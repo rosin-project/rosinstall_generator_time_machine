@@ -173,6 +173,7 @@ if [ -f "${ROSDISTRO_CACHE_DIR}/${ROSDISTRO_CACHE_FILENAME}" ]; then
 else
   # figure out closest cache dir
   # TODO: error handling
+  printf "Determining closest rosdistro cache ..\n" >&2
   CLOSEST_CACHE_DIR=$(${SCRIPT_DIR}/find_closest_cache.py -a ${RGTM_ROSDISTRO_CACHES_DIR} ${ROS_DISTRO} ${ROSDISTRO_COMMIT_EPOCH})
   printf "Base cache for new cache: ${CLOSEST_CACHE_DIR}\n" >&2
 
