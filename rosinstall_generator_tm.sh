@@ -69,7 +69,7 @@ DOCKER_CONTAINER_INDEX_YAML_URI="${DOCKER_CONTAINER_ROSDISTRO_DIR}/index.yaml"
 
 
 # check user requested a distribution we know about
-if [[ ! "groovy hydro indigo jade kinetic melodic" =~ "${ROS_DISTRO}" ]];
+if [[ ! "groovy hydro indigo jade kinetic lunar melodic" =~ "${ROS_DISTRO}" ]];
 then
   printf "Requested an unsupported ROS distribution: '${2}', aborting\n" >&2
   exit ${EXIT_USAGE}
