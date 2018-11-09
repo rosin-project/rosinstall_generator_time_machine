@@ -114,6 +114,7 @@ if __name__ == '__main__':
         # find_cache_dirs_for_distro(base_dir, ros_distro)
         candidates = [d for d in listdir(base_dir) if has_cache_file(path.join(base_dir, d), ros_distro)]
         epochs = [int(d) for d in candidates if d.isdigit()]
+        epochs.sort()
         if not epochs:
             log("ERR : no candidates left after filtering")
             closest_cache_path = ''
