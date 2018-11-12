@@ -152,7 +152,8 @@ fi
 
 # always reset to master and revert any changes made
 printf "Resetting local rosdistro clone ..\n" >&2
-git -C "${ROSDISTRO_DIR}" checkout -q HEAD -- . >&2
+git -C "${ROSDISTRO_DIR}" checkout -q -- . >&2
+git -C "${ROSDISTRO_DIR}" checkout master >&2
 
 # determine the commit 'closest' to the given timepoint
 ROSDISTRO_COMMIT=$(git -C "${ROSDISTRO_DIR}" rev-list -n1 --before=${TIMEPOINT} master)
