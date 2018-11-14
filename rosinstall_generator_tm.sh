@@ -198,7 +198,7 @@ else
       "${DOCKER_RGTM_BASE_PATH}/${ROSDISTRO_SCRIPT_VENV}/bin/rosdistro_build_cache" \
         --ignore-errors \
         ${DOCKER_CONTAINER_INDEX_YAML_URI} \
-        ${ROS_DISTRO}
+        ${ROS_DISTRO} >&2
 
   # we don't ever use the non-compressed file
   rm "${ROSDISTRO_CACHE_DIR}/${ROS_DISTRO}-cache.yaml"
