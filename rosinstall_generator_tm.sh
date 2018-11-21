@@ -212,7 +212,7 @@ sed -ri "s|(distribution_cache\|release_cache):.*|\1: file://${DOCKER_CONTAINER_
 
 printf "Invoking: rosinstall_generator --rosdistro=${ROS_DISTRO} ${ROSINSTALL_GENERATOR_ARGS}\n" >&2
 # we don't use '-t' here to avoid stderr to be mixed with stdout
-docker run \
+exec docker run \
   -i \
   --rm \
   --user=$(id -u):$(id -g) \
