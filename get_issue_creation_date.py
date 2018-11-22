@@ -14,35 +14,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# yes, this could have been done with urllib(2) or requests and json, but
-# future extensions / other utils will probably use PyGitHub as well.
-
 import os
 import sys
 import argparse
-import urlparse
 
 try:
-    from github import Github
+    import requests
 except:
-    sys.stderr.write("Cannot import PyGitHub, do you have it installed?\n")
+    sys.stderr.write("Cannot import the 'requests' module, do you have it installed?\n")
     sys.exit(os.EX_UNAVAILABLE)
+
+
+# from Chris
+def gh_get_issue_created_at(url_issue):
+    # type: (str) -> str
+    prefix = "https://github.com/"
+    if not prefix in url_issue:
+        raise RuntimeError("Not a github issue url")
+    owner, repo, _, number = url_issue[len(prefix):].split('/')
+    url_api = 'https://api.github.com/repos/{}/{}/issues/{}'
+    url_api = url_api.format(owner, repo, number)
+    r = requests.get(url_api)
+    created_at = r.json()['created_at']
+    return created_at
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('URL', help='Issue url.')
 args = parser.parse_args()
 
-issue_url = args.URL
-# see if this is a complete url (crude check)
-if 'http' in issue_url:
-    import urllib
-    issue_url = urlparse.urlparse(issue_url).path
-
-splits = issue_url.split('/')
-repo, issue_nr = '{}/{}'.format(splits[1], splits[2]), int(splits[-1])
-
-g = Github()
-issue = g.get_repo(repo).get_issue(issue_nr)
-
-# github issue creation dates are UTC
-print (issue.created_at.isoformat() + 'Z')
+try:
+    # github stamps are UTC
+    sys.stdout.write(gh_get_issue_created_at(args.URL) + '\n')
+except Exception as e:
+    sys.stderr.write('Couldn\'t retrieve issue creation date: ' + str(e) + '\n')
+    sys.exit(1)
