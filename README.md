@@ -5,86 +5,78 @@ A simple bash script to generate `.rosinstall` files 'from the past'.
 
 ## Overview
 
-This is a bash script that will, given a GitHub issue link, a date in the past and some other bits of information, try to generate a `.rosinstall` file using `rosinstall_generator` and a clone of `ros/rosdistro` as it was at the date specified.
+This bash script is a wrapper around `rosinstall_generator` that accepts one additional argument: a date in the past.
 
-The `.rosinstall` file can then be used to build the set of ROS packages that will approximate the 'state of ROS' as it was at the time the issue was reported.
+Using this datetime stamp, it will try to generate a `.rosinstall` file using `rosinstall_generator` and a clone of `ros/rosdistro` as that repository was at the date specified.
+
+The `.rosinstall` file can then be used to build the set of ROS packages that will approximate the 'state of ROS' as it was at the time the issue was reported ('approximate', as we only revert rosdistro, not the rosdep database, nor the base OS).
 
 ## Usage
 
 ```
-rosinstall_generator_tm.sh [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME
+rosinstall_generator_tm.sh ISO8601_DATETIME ROS_DISTRO [ other rosinstall_generator args ]
 ```
 
-Example invocation to generate a `.rosinstall` file, based on an issue opened on the `yujinrobot/kobuki_core` tracker on the 1st of March 2017 (note reuse of the cache):
+Example invocation to generate a `.rosinstall` file based on an issue opened on the `yujinrobot/kobuki_core` tracker on the 1st of March 2017 (note reuse of the cache):
 
 ```shell
+user@machine:~$ get_issue_creation_date.py https://github.com/yujinrobot/kobuki_core/issues/29
+2017-03-01T08:57:20Z
 user@machine:~$ rosinstall_generator_tm.sh \
-  https://github.com/yujinrobot/kobuki_core/issues/29 \
-  eed104d \
+  '2017-03-01T08:57:20Z' \
   kinetic \
   kobuki_ftdi \
-  deps_eed104d.rosinstall
+  --deps --deps-only --tar > deps.rosinstall
+Requested timepoint: '2014-07-28T09:14:56Z' (1406538896)
+Resetting local rosdistro clone ..
+Previous HEAD position was 2b0f84c... jsk_common: 1.0.33-0 in 'hydro/distribution.yaml' [bloom]
 Switched to branch 'master'
 Your branch is up-to-date with 'origin/master'.
-Retrieving issue 'created_at' property for: https://github.com/yujinrobot/kobuki_core/issues/29
-Found: 2017-03-01T08:57:20Z
-Determined rosdistro commit: 2af311e205b874e862be155ffe21cb54e902f60b
-Reusing existing branch
-Switched to branch 'bughunt_eed104d'
-Skipping rosdistro cache, already exists
-Creating temporary rosdistro index ..
-Using temporary index to generate rosinstall file (dependencies only) ..
+Determined rosdistro commit: 2b0f84cf (authored: 1406540365)
+Reverting to ros/rosdistro@2b0f84cf
+Cache already exists for (distro; stamp) tuple, skipping generation
+Updating local rosdistro index.yaml to use cache from the past ..
+Invoking: rosinstall_generator --rosdistro=kinetic kobuki_ftdi --deps --deps-only --tar
 Using ROS_DISTRO: kinetic
-Storing metadata ..
-Done
+user@machine:~$
 ```
 
-The same invocation, but with a datetime instead of an issue url:
+**Note**: be prepared to press <kbd>RET</kbd> or <kbd>ENTER</kbd> a few times for some repositories that no longer exist, or are now private repositories (and for which `git` would now need a password).
 
-```shell
-user@machine:~$ rosinstall_generator_tm.sh \
-  2017-03-01T08:57:20Z \
-  eed104d \
-  kinetic \
-  kobuki_ftdi \
-  deps_eed104d.rosinstall
-...
-```
+This will generate the `deps.rosinstall` file containing all dependencies (and *only* the dependencies) of the `kobuki_ftdi` package in ROS Kinetic at the time that `yujinrobot/kobuki_core/issues/29` was reported.
 
-**Note**: be prepared to press <kbd>RET</kbd> a few times for some repositories that no longer exist, or are now private repositories (and for which `git` would now need a password).
-
-This will generate the `deps_eed104d.rosinstall` file containing all dependencies (and only the dependencies) of the `kobuki_ftdi` package in ROS Kinetic at the time that `yujinrobot/kobuki_core/issues/29` was reported. It will also generate a yaml file containing some metadata (`ros/rosdistro` commit used, issue created stamp, ROS distribution, etc) and a directory containing the `rosdistro` cache that was used to generate the `.rosinstall` file.
+If a rosdistro cache was not already available for the timepoint and ROS version requested, one will be generated using the closest available cache as a starting point.
 
 
 ## Requirements
 
 In order to be able to run this, the following need to be present:
 
+ - Docker
  - git
+ - sed
+ - date
  - Python 2
- - `rosdistro` Python library ([this fork](https://github.com/rosin-project/rosdistro_python/tree/rosin_bughunt_0.6.8), `rosin_bughunt_0.6.8` branch)
- - `rosinstall_generator`
- - PyGitHub
 
-It is recommended to install these dependencies (ie: `rosdistro` and `rosinstall_generator`) in a Python virtual environment (order matters):
+Most of the runtime infrastructure will be installed into a Docker image.
 
-```shell
-virtualenv ritm_venv
-source ritm_venv/bin/activate
-pip install -U pip
-pip install wheel
-pip install git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8
-pip install rosinstall_generator
-pip install PyGitHub
-```
+The script will also check for the presence of these tools and programs.
 
-At this point the environment setup should be complete and the tool can be used. Do not forget to (re)activate the virtual environment again when needed.
+
+## Setup and installation
+
+Installation consists of cloning the Github repository to a suitable location.
+
+Now run the `build.sh` script in the `docker` sub directory. This should build a Docker image containing the runtime infrastructure.
+
+At this point setup is complete and the tool can be used.
+
+For convenience the directory containing `rosinstall_generator_tm.sh` may be placed on the `PATH`.
 
 
 ## Limitations
 
-The current implementation can only go back to 25th of January, 2014 (on that date updates to various packages including `rosdistro` and `rosinstall_generator` was rolled out for REP-141 compliance).
-It also cannot reuse any caches that are 'close' or 'near' in time to a previous cache right now, leading to the tool always (re)building a rosdistro cache, even if there is only a minor time difference between two subsequent `rosdistro` commits.
+The current implementation can only go back to 22nd of April, 2013 (on that date updates to various packages including `rosdistro` and `rosinstall_generator` was rolled out for REP-137 compliance).
 
 It (obviously) cannot provide information on repositories that no longer exist (this becomes more of a problem the further back in time one goes).
 
@@ -93,10 +85,7 @@ It (obviously) cannot provide information on repositories that no longer exist (
 
  - probably rewrite in Python
  - extend support to `version 2` and earlier versions of `rosdistro` (and related tools)
- - add reuse of existing caches that are 'near in time'
- - host caches in an online repository to avoid having to build them in the first place
  - silence `rosdistro_build_cache` a bit
- - expand metadata generation to include more details
  - distribute this tool in a Docker image
  - integrate with OSRF [Legacy ROS](https://hub.docker.com/r/osrf/ros_legacy/tags/) Docker images
 
