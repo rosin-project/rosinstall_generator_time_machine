@@ -21,6 +21,7 @@ RUN apt-get update \
       git-core \
       python-distribute \
       python-pip \
+      python-requests \
       python-setuptools \
       python-virtualenv \
       python-wheel \
@@ -50,14 +51,6 @@ RUN /rgtm/post141/bin/pip install -U wheel setuptools
 RUN /rgtm/post141/bin/pip install \
   git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8#egg=rosdistro \
   rosinstall_generator
-RUN rm -rf /root/.cache/pip
-
-# setup global env
-RUN pip install -U pip
-RUN pip install -U wheel setuptools
-
-# install PyGitHub globally
-RUN pip install PyGitHub
 RUN rm -rf /root/.cache/pip
 
 WORKDIR /rgtm/work
