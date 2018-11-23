@@ -95,7 +95,7 @@ Some frequently asked questions and answers.
 
 #### Date YYYY-MM-DDTHH:MM:SS too far in the past
 
-This error is printed whenever the script is asked to go back to a date that is beyond what is currently supported (25th of January 2014).
+This error is printed whenever the script is asked to go back to a date that is beyond what is currently supported (22nd of April, 2013).
 
 #### No packages/stacks left after ignoring not released
 
