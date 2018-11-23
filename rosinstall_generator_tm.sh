@@ -15,128 +15,211 @@ set -e
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-# assumption: 'special' version of rosdistro_build_cache is available
-#
-# args:
-#
-#  1: url OR <iso 8601 date+timestamp>
-#  2: bug id
-#  3: ros distro
-#  4: buggy package
-#  5: output rosinstall filename
-
-if [ $# -ne 5 ];
+EXIT_USAGE=64
+if [ $# -lt 2 ];
 then
-    echo "USAGE: $0 [ ISSUE_URL | ISO8601_DATETIME ] BUG_ID ROS_DISTRO PUT ROSINSTALL_FILENAME"
-    exit 64   # EX_USAGE
+  echo "USAGE: $0 TIMEPOINT ROS_DISTRO <ARGS>\
+
+A wrapper around rosinstall_generator that makes it use rosdistro
+caches 'from the past', allowing the generation of rosinstall
+files with consistent sets of old releases of ROS packages.
+
+Where:
+
+  TIMEPOINT   An iso8601 datetime string (in the past)
+  ROS_DISTRO  Name of the targeted ROS distribution/release
+  ARGS        Arguments for rosinstall_generator. See the help
+              of rosinstall_generator for more information
+
+Note  : this script can be run without any arguments for
+        rosinstall_generator. In that case it will just generate a
+        cache for the specified TIMEPOINT and rosinstall_generator
+        will print its usage information.
+
+Note 2: pre REP-141 (before 24-Jan-2014) rosinstall_generator did
+        not support the '--flat' argument."
+  exit ${EXIT_USAGE}
 fi
+
+TIMEPOINT="$1"
+ROS_DISTRO=$(echo "$2" | tr '[:upper:]' '[:lower:]')
+ROSINSTALL_GENERATOR_ARGS=${@:3}
 
 SCRIPT_DIR=$(dirname $(readlink -f $0))
-ROSDISTRO_DIR=rosdistro
+RGTM_BASE_DIR="$HOME/.robust-rosin/rgtm"
 
-if [ ! -d ${ROSDISTRO_DIR} ];
+RGTM_ROSDISTRO_CACHES_DIR="${RGTM_BASE_DIR}/rgtm_rosdistro_caches"
+ROSDISTRO_CACHES_URL="https://github.com/gavanderhoorn/rgtm_rosdistro_caches.git"
+
+ROSDISTRO_REPO_URL="https://github.com/ros/rosdistro.git"
+ROSDISTRO_DIR="${RGTM_BASE_DIR}/rosdistro"
+ROSDISTRO_SCRIPT_VENV_PRE141="pre141"
+ROSDISTRO_SCRIPT_VENV_POST141="post141"
+ROSDISTRO_SCRIPT_VENV=${ROSDISTRO_SCRIPT_VENV_POST141}
+ROSDISTRO_PRE141_CUTOFF="2014-01-25T00:00:00Z"
+ROSDISTRO_PRE137_CUTOFF="2013-04-22T13:14:47-0700"
+
+DOCKER_IMAGE="robust-rosin/rosinstall_generator_time_machine:03"
+DOCKER_RGTM_BASE_PATH="/rgtm"
+DOCKER_RGTM_WORK_DIR="${DOCKER_RGTM_BASE_PATH}/work"
+DOCKER_CONTAINER_CACHE_FILENAME="/cache.yaml.gz"
+DOCKER_CONTAINER_ROSDISTRO_DIR="/rosdistro"
+DOCKER_CONTAINER_INDEX_YAML_URI="${DOCKER_CONTAINER_ROSDISTRO_DIR}/index.yaml"
+
+
+# check user requested a distribution we know about
+if [[ ! "groovy hydro indigo jade kinetic lunar melodic" =~ "${ROS_DISTRO}" ]];
 then
-    echo "Need to clone rosdistro .."
-    git clone https://github.com/ros/rosdistro.git ${ROSDISTRO_DIR}
+  printf "Requested an unsupported ROS distribution: '${2}', aborting\n" >&2
+  exit ${EXIT_USAGE}
 fi
-git -C ${ROSDISTRO_DIR} checkout -- .
-git -C ${ROSDISTRO_DIR} checkout master
 
+# make sure all tools we need are available
+for prog in date docker git sed; do
+  if [ ! -x "$(command -v ${prog})" ]; then
+    printf "Required program '${prog}' not found, aborting\n" >&2
+    # TODO: proper exit code
+    exit 1
+  fi
+done
 
-BUG_ISSUE_URL=$1
+# see whether current user can run docker directly
+if ! docker > /dev/null 2>&1; then
+  printf "Can't run 'docker' command as user '${USER}', aborting\n" >&2
+  # TODO: proper exit code
+  exit 1
+fi
 
-if [[ $BUG_ISSUE_URL = *"http"* ]];
+# see whether the Docker image exists locally
+if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then
+  printf "Can't find Docker image '${DOCKER_IMAGE}' locally (and not pulling), aborting\n" >&2
+  # TODO: proper exit code
+  exit 1
+fi
+
+# see whether we need to create the (hidden) base dir for this tool
+if [ ! -d "${RGTM_BASE_DIR}" ];
 then
-    echo "Retrieving issue 'created_at' property for: ${BUG_ISSUE_URL}"
-    BUG_STAMP=$(${SCRIPT_DIR}/get_issue_creation_date.py ${BUG_ISSUE_URL})
-    echo "Found: ${BUG_STAMP}"
+  printf "Creating rgtm base dir ..\n" >&2
+  # TODO: check success and error out
+  mkdir -p "${RGTM_BASE_DIR}" >&2
+fi
+
+# see whether we still need to clone rosdistro itself
+# TODO: should we clone the 'special' fork of rosdistro from the robust org?
+if [ ! -d "${ROSDISTRO_DIR}" ];
+then
+  printf "Need to clone rosdistro .. " >&2
+  git clone -q ${ROSDISTRO_REPO_URL} "${ROSDISTRO_DIR}" >&2
+  # TODO: error handling
+  printf "done\n" >&2
+fi
+
+# see whether we need to download the initial set of caches
+# TODO: yes, this only checks for existence of the directory
+if [ ! -d "${RGTM_ROSDISTRO_CACHES_DIR}" ];
+then
+  printf "Need to retrieve some rosdistro caches .." >&2
+  # TODO: error handling
+  git clone -q ${ROSDISTRO_CACHES_URL} "${RGTM_ROSDISTRO_CACHES_DIR}" >&2
+  printf "done\n" >&2
+fi
+
+# see what datetime user wants to take us back to
+TIMEPOINT_EPOCH=$(date --date=${TIMEPOINT} +%s)
+printf "Requested timepoint: '${TIMEPOINT}' (${TIMEPOINT_EPOCH})\n" >&2
+if ! date -d ${TIMEPOINT} &> /dev/null;
+then
+  printf "Provided date '${TIMEPOINT}' is not a valid date so cannot continue ..\n" >&2
+  exit ${EXIT_USAGE}
+fi
+
+# unfortunately we can't go back too far ..
+if [ ${TIMEPOINT_EPOCH} -lt $(date --date="${ROSDISTRO_PRE137_CUTOFF}" +%s) ];
+then
+  printf "Date '${TIMEPOINT}' is too far in the past (REP-137 cutoff), sorry ..\n" >&2
+  # TODO: find proper exit code
+  exit 1
+fi
+
+# if we're going back to before 25 Jan 2014, we need to use older rosdistro support
+if [ ${TIMEPOINT_EPOCH} -lt $(date --date="${ROSDISTRO_PRE141_CUTOFF}" +%s) ];
+then
+  printf "Switching to pre-REP-141 infrastructure ..\n" >&2
+  ROSDISTRO_SCRIPT_VENV="${ROSDISTRO_SCRIPT_VENV_PRE141}"
+fi
+
+
+# always reset to master and revert any changes made
+printf "Resetting local rosdistro clone ..\n" >&2
+git -C "${ROSDISTRO_DIR}" checkout -q -- . >&2
+git -C "${ROSDISTRO_DIR}" checkout master >&2
+
+# determine the commit 'closest' to the given timepoint
+ROSDISTRO_COMMIT=$(git -C "${ROSDISTRO_DIR}" rev-list -n1 --before=${TIMEPOINT} master)
+# TODO: do we want author or committer date here? Using author date for now.
+ROSDISTRO_COMMIT_EPOCH=$(git -C "${ROSDISTRO_DIR}" log -n1 --date=format-local:'%s' --pretty=format:'%ad' ${ROSDISTRO_COMMIT})
+printf "Determined rosdistro commit: ${ROSDISTRO_COMMIT:0:8} (authored: ${ROSDISTRO_COMMIT_EPOCH})\n" >&2
+
+printf "Reverting to ros/rosdistro@${ROSDISTRO_COMMIT:0:8}\n" >&2
+git -C "${ROSDISTRO_DIR}" checkout -q ${ROSDISTRO_COMMIT} >&2
+
+
+# see whether we still need to generate a cache for this timepoint / commit
+ROSDISTRO_CACHE_DIR="${RGTM_ROSDISTRO_CACHES_DIR}/${ROSDISTRO_COMMIT_EPOCH}"
+ROSDISTRO_CACHE_FILENAME="${ROS_DISTRO}-cache.yaml.gz"
+if [ -f "${ROSDISTRO_CACHE_DIR}/${ROSDISTRO_CACHE_FILENAME}" ]; then
+  printf "Cache already exists for (distro; stamp) tuple, skipping generation\n" >&2
+
 else
-    echo "Going back to '${1}'"
-    BUG_STAMP=$1
+  # figure out closest cache dir
+  # TODO: error handling
+  printf "Determining closest rosdistro cache ..\n" >&2
+  CLOSEST_CACHE_DIR=$(${SCRIPT_DIR}/find_closest_cache.py -a ${RGTM_ROSDISTRO_CACHES_DIR} ${ROS_DISTRO} ${ROSDISTRO_COMMIT_EPOCH})
+  printf "Base cache for new cache: ${CLOSEST_CACHE_DIR}\n" >&2
+
+  # needs to be generated
+  printf "Will store new cache in: ${ROSDISTRO_CACHE_DIR}\n" >&2
+  mkdir -p "${ROSDISTRO_CACHE_DIR}" >&2
+
+  # make current index.yaml point to historical cache we use as a basis for the new one
+  sed -ri "s|(distribution_cache\|release_cache):.*|\1: file://${DOCKER_CONTAINER_CACHE_FILENAME}|g" ${ROSDISTRO_DIR}/index.yaml >&2
+
+  printf "Building cache ..\n" >&2
+  # TODO: error handling
+  docker run \
+    -it \
+    --rm \
+    --user=$(id -u):$(id -g) \
+    -v "${CLOSEST_CACHE_DIR}/${ROSDISTRO_CACHE_FILENAME}":${DOCKER_CONTAINER_CACHE_FILENAME}:ro \
+    -v "${ROSDISTRO_DIR}":${DOCKER_CONTAINER_ROSDISTRO_DIR}:ro \
+    -v "${ROSDISTRO_CACHE_DIR}":${DOCKER_RGTM_WORK_DIR} \
+    ${DOCKER_IMAGE} \
+      "${DOCKER_RGTM_BASE_PATH}/${ROSDISTRO_SCRIPT_VENV}/bin/rosdistro_build_cache" \
+        --ignore-errors \
+        ${DOCKER_CONTAINER_INDEX_YAML_URI} \
+        ${ROS_DISTRO} >&2
+
+  # we don't ever use the non-compressed file
+  rm "${ROSDISTRO_CACHE_DIR}/${ROS_DISTRO}-cache.yaml"
+
+  # store some metadata
+  echo "Cache(s) for ros/rosdistro@${ROSDISTRO_COMMIT:0:8}." > "${ROSDISTRO_CACHE_DIR}/readme.txt"
 fi
 
-if ! date -d ${BUG_STAMP} &> /dev/null;
-then
-    echo "Provided date '${BUG_STAMP}' is not a valid date .."
-    exit 64   # EX_USAGE
-fi
+printf "Updating local rosdistro index.yaml to use cache from the past ..\n" >&2
+sed -ri "s|(distribution_cache\|release_cache):.*|\1: file://${DOCKER_CONTAINER_CACHE_FILENAME}|g" ${ROSDISTRO_DIR}/index.yaml >&2
 
-# check to make sure we're not going back to a point earlier than what we support
-if [ $(date --date=${BUG_STAMP} +%s) -lt $(date --date='2014-01-25T00:00:00Z' +%s) ];
-then
-    echo "Date '${BUG_STAMP}' too far in the past."
-    exit 64   # EX_USAGE
-fi
-
-BUG_ID=$2
-BUG_DISTRO=$3
-BUG_PKG=$4
-BUG_ROSINSTALL_OUTPUT=$5
-
-BUG_ROSDISTRO_COMMIT=$(git -C ${ROSDISTRO_DIR} rev-list -n1 --before=${BUG_STAMP} master)
-BUG_ROSDISTRO_CACHE_DIR=$(TZ="UTC" date -d ${BUG_STAMP} +%Y%m%d_%H%M%S)_${BUG_DISTRO}_${BUG_ROSDISTRO_COMMIT:0:8}
-echo "Determined rosdistro commit: ${BUG_ROSDISTRO_COMMIT}"
-
-
-# https://stackoverflow.com/a/41991368
-# Note: we don't create tags for efficiency reasons, but to make doing all
-# of this manually easier.
-BUG_ROSDISTRO_TAG_NAME=bughunt_${BUG_ID}_${BUG_ROSDISTRO_COMMIT:0:8}
-if git -C ${ROSDISTRO_DIR} show-ref --quiet refs/tags/${BUG_ROSDISTRO_TAG_NAME};
-then
-    echo "Reusing existing tag '${BUG_ROSDISTRO_TAG_NAME}'"
-else
-    echo "Going back in rosdistro's history .."
-    echo "Creating tag: '${BUG_ROSDISTRO_TAG_NAME}'"
-    git -C ${ROSDISTRO_DIR} tag -am "ROBUST time machine tagging ${BUG_ROSDISTRO_COMMIT:0:8} for ${BUG_STAMP}." ${BUG_ROSDISTRO_TAG_NAME} ${BUG_ROSDISTRO_COMMIT}
-fi
-git -C ${ROSDISTRO_DIR} checkout -q ${BUG_ROSDISTRO_TAG_NAME}
-
-if [ ! -d ${BUG_ROSDISTRO_CACHE_DIR} ] || [ ! -f ${BUG_ROSDISTRO_CACHE_DIR}/${BUG_DISTRO}-cache.yaml ];
-then
-    echo "Building cache .."
-    rosdistro_build_cache --ignore-local --ignore-errors ${ROSDISTRO_DIR}/index.yaml ${BUG_DISTRO}
-
-    echo "Storing cache in: ${BUG_ROSDISTRO_CACHE_DIR}"
-    mkdir -p ${BUG_ROSDISTRO_CACHE_DIR}
-    mv ${BUG_DISTRO}-cache.yaml* ${BUG_ROSDISTRO_CACHE_DIR}
-
-else
-    echo "Skipping rosdistro cache, already exists"
-fi
-
-
-echo "Updating temporary rosdistro index .."
-# recent indices
-sed -i "s|http://repositories.ros.org/rosdistro_cache|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml
-# old indices
-sed -i "s|http://ros.org/rosdistro|file://$(pwd)/${BUG_ROSDISTRO_CACHE_DIR}|g" ${ROSDISTRO_DIR}/index.yaml
-
-echo "Using temporary index to generate rosinstall file (dependencies only) .."
-ROSDISTRO_INDEX_URL=file://$(pwd)/${ROSDISTRO_DIR}/index.yaml \
-  rosinstall_generator \
-    ${BUG_PKG} \
-    --rosdistro=${BUG_DISTRO} \
-    --deps-only \
-    --deps \
-    --tar \
-    --flat > ${BUG_ROSINSTALL_OUTPUT}
-
-
-echo "Storing metadata .."
-cat << EOF > metadata_${BUG_PKG}_${BUG_DISTRO}_${BUG_ID}.yaml
-%YAML 1.1
----
-bug_id: ${BUG_ID}
-put: ${BUG_PKG}
-ros_distro: ${BUG_DISTRO}
-datetime_reported: ${BUG_STAMP}
-issue_url: ${BUG_ISSUE_URL}
-reproduction-images:
-  buggy: TODO
-  fixed: TODO
-  rosdistro: ${BUG_ROSDISTRO_COMMIT}
-EOF
-
-echo "Done"
+printf "Invoking: rosinstall_generator --rosdistro=${ROS_DISTRO} ${ROSINSTALL_GENERATOR_ARGS}\n" >&2
+# we don't use '-t' here to avoid stderr to be mixed with stdout
+exec docker run \
+  -i \
+  --rm \
+  --user=$(id -u):$(id -g) \
+  -e ROSDISTRO_INDEX_URL="file://${DOCKER_CONTAINER_INDEX_YAML_URI}" \
+  -v "${ROSDISTRO_CACHE_DIR}/${ROSDISTRO_CACHE_FILENAME}":${DOCKER_CONTAINER_CACHE_FILENAME}:ro \
+  -v "${ROSDISTRO_DIR}/index.yaml":${DOCKER_CONTAINER_INDEX_YAML_URI}:ro \
+  ${DOCKER_IMAGE} \
+    "${DOCKER_RGTM_BASE_PATH}/${ROSDISTRO_SCRIPT_VENV}/bin/rosinstall_generator" \
+      --rosdistro=${ROS_DISTRO} \
+      ${ROSINSTALL_GENERATOR_ARGS}
