@@ -1,3 +1,5 @@
+[![license - apache 2.0](https://img.shields.io/:license-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
+
 # rosinstall_generator_time_machine
 
 A simple bash script to generate `.rosinstall` files 'from the past'.
