@@ -69,6 +69,8 @@ The script will also check for the presence of these tools and programs.
 
 Installation consists of cloning the Github repository to a suitable location.
 
+Make sure to have the required Python modules available to you: check `requirements.txt` or run `pip install -r requirements.txt` (using a virtualenv is recommended).
+
 Now run the `build.sh` script in the `docker` sub directory. This should build a Docker image containing the runtime infrastructure.
 
 At this point setup is complete and the tool can be used.
