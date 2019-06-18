@@ -49,7 +49,7 @@ SCRIPT_DIR=$(dirname $(readlink -f $0))
 RGTM_BASE_DIR="$HOME/.robust-rosin/rgtm"
 
 RGTM_ROSDISTRO_CACHES_DIR="${RGTM_BASE_DIR}/rgtm_rosdistro_caches"
-ROSDISTRO_CACHES_URL="https://github.com/gavanderhoorn/rgtm_rosdistro_caches.git"
+ROSDISTRO_CACHES_URL="https://github.com/rosin-project/rgtm_rosdistro_caches.git"
 
 ROSDISTRO_REPO_URL="https://github.com/ros/rosdistro.git"
 ROSDISTRO_DIR="${RGTM_BASE_DIR}/rosdistro"
