@@ -13,6 +13,14 @@ Using this datetime stamp, it will try to generate a `.rosinstall` file using `r
 
 The `.rosinstall` file can then be used to build the set of ROS packages that will approximate the 'state of ROS' as it was at the time the issue was reported ('approximate', as we only revert rosdistro, not the rosdep database, nor the base OS).
 
+
+## Caches
+
+This tool generates and re-uses `rosdistro` cache files, which will be stored in `$HOME/.robust-rosin`.
+This cache is seeded from the [rosin-project/rgtm_rosdistro_caches](https://github.com/rosin-project/rgtm_rosdistro_caches) repository, but only upon the first use of the tool.
+As the cache repository is updated every now and then, be sure to `git pull` it if you want to make use of the available caches.
+
+
 ## Usage
 
 ```
