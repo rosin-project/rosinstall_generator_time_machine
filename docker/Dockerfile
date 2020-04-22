@@ -43,11 +43,16 @@ RUN /rgtm/pre141/bin/pip install -U pip \
       rosinstall==0.7.2 \
       rosdep==0.10.24 \
       rosinstall_generator==0.1.5 \
+      catkin_pkg==0.4.16 \
+      rospkg==1.2.3 \
+      distribute==0.7.3 \
+      pyyaml==5.3 \
+      vcstools==0.1.30 \
  && rm -rf /root/.cache/pip
 
 # setup post venv
 RUN /rgtm/post141/bin/pip install -U pip \
- && /rgtm/post141/bin/pip install -U wheel setuptools \
+ && /rgtm/post141/bin/pip install -U wheel setuptools==44.0.0 \
  && /rgtm/post141/bin/pip install \
       git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8#egg=rosdistro \
       rosinstall_generator \
