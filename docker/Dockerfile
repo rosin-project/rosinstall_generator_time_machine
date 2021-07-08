@@ -40,10 +40,10 @@ RUN /rgtm/pre141/bin/pip install -U pip \
  && /rgtm/pre141/bin/pip install -U nose==1.3.7 \
  && /rgtm/pre141/bin/pip install -U wheel setuptools==20.1.1 \
  && /rgtm/pre141/bin/pip install \
-      git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.8.3_test#egg=rosdistro \
+      git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.2.20#egg=rosdistro \
       rosinstall==0.7.2 \
       rosdep==0.10.24 \
-      rosinstall_generator \
+      rosinstall_generator==0.1.5 \
       catkin_pkg==0.4.16 \
       rospkg==1.2.3 \
       distribute==0.7.3 \
@@ -55,8 +55,8 @@ RUN /rgtm/pre141/bin/pip install -U pip \
 RUN /rgtm/post141/bin/pip install -U pip \
  && /rgtm/post141/bin/pip install -U wheel setuptools==44.0.0 \
  && /rgtm/post141/bin/pip install \
-      git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8#egg=rosdistro \
-      rosinstall_generator==0.1.15 \
+      git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.8.3_test#egg=rosdistro \
+      rosinstall_generator \
  && rm -rf /root/.cache/pip
 
 WORKDIR /rgtm/work
