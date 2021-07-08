@@ -37,8 +37,7 @@ RUN virtualenv -p python2.7 pre141 \
 # setup pre venv
 # use older version of setuptools or things won't build
 RUN /rgtm/pre141/bin/pip install -U pip \
- && /rgtm/pre141/bin/pip install -U nose==1.3.7 \
- && /rgtm/pre141/bin/pip install -U wheel setuptools==20.1.1 \
+ && /rgtm/pre141/bin/pip install -U wheel setuptools==20.1.1 nose==1.3.7 \
  && /rgtm/pre141/bin/pip install \
       git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.2.20#egg=rosdistro \
       rosinstall==0.7.2 \
