@@ -54,8 +54,8 @@ RUN /rgtm/pre141/bin/pip install -U pip \
 RUN /rgtm/post141/bin/pip install -U pip \
  && /rgtm/post141/bin/pip install -U wheel setuptools==44.0.0 \
  && /rgtm/post141/bin/pip install \
-      rosdistro==0.7.3 \
-      rosinstall_generator \
+      git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8#egg=rosdistro \
+      rosinstall_generator==0.1.15 \
  && rm -rf /root/.cache/pip
 
 WORKDIR /rgtm/work
