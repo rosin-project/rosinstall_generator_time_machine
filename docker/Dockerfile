@@ -55,7 +55,7 @@ RUN /rgtm/pre141/bin/pip --no-python-version-warning install -U pip \
 RUN /rgtm/post141/bin/pip --no-python-version-warning install -U pip \
  && /rgtm/post141/bin/pip --no-python-version-warning install -U wheel setuptools==44.0.0 \
  && /rgtm/post141/bin/pip --no-python-version-warning install \
-      git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.6.8#egg=rosdistro \
+      git+https://github.com/rosin-project/rosdistro_python@rosin_bughunt_0.8.3_test#egg=rosdistro \
       rosinstall_generator \
  && rm -rf /root/.cache/pip
 
