@@ -105,6 +105,16 @@ It (obviously) cannot provide information on repositories that no longer exist (
 
 Some frequently asked questions and answers.
 
+#### Git keeps asking for my credentials
+
+This is mostly seen with repositories which used to be on Github.
+
+Github sends the same response to your `git` client (which is used when the `rosdistro` cache is created) for repositories which are private and those which no longer exist (likely a security feature).
+There would be no need to enter any *actual* credentials, as your username & password will not bring back repositories which no longer exist.
+
+Press <kbd>RET</kbd> or <kbd>Enter</kbd> a few times until the script continues with the next repository.
+
+
 #### Date YYYY-MM-DDTHH:MM:SS too far in the past
 
 This error is printed whenever the script is asked to go back to a date that is beyond what is currently supported (22nd of April, 2013).
