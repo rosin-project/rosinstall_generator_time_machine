@@ -48,7 +48,7 @@ RUN /rgtm/pre141/bin/pip --no-python-version-warning install -U pip \
       rospkg==1.2.3 \
       distribute==0.7.3 \
       pyyaml==5.3 \
-      vcstools==0.1.30 \
+      vcstools==0.1.38 \
  && rm -rf /root/.cache/pip
 
 # setup post venv
